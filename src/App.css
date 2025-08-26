@@ -1,0 +1,54 @@
+@import "tailwindcss";
+.rojo-f-frisco{
+ background-color:#D61B26;
+ /*background-color:#4b0082;*/
+}
+.blanco-frisco {
+  color: #ffe5cc;  
+}
+
+.rojo-b-frisco {
+  background-color: #E83F32;  
+}
+.naranja-frisco {
+  background-color: #F1881F;  
+}
+.amarillo-frisco {
+  background-color: #fff0f0;  
+}
+.black-plum{
+  background-color: #362b32;  
+}
+.dark-navy{
+  background-color: #092241;  
+}
+.deep-gray{
+  /*color: #303537;  */
+  color: #303537;    
+}
+.obsidian{
+  color: #08100C;  
+}
+.texto-claro{
+  color: #FCFAEE;  
+}
+.fondo-claro{
+  background-color: #ffffff;  
+}
+
+main::-webkit-scrollbar {
+  width: 8px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb; /* Tailwind gray-200 */
+  border-radius: 9999px;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* Tailwind gray-400 */
+}

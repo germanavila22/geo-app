@@ -34,6 +34,10 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedRecord, setSelectedRecord] = useState<DataRecord | null>(null);
   //console.log(selectedRecord)
+  if (selectedRecord) {
+    // Aquí puedes manejar el registro seleccionado, por ejemplo, enviarlo al componente padre
+    //console.log('Registro seleccionado:', selectedRecord);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

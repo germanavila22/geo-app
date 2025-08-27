@@ -30,9 +30,9 @@ interface MenuPPalProps {
 const MenuPpal: React.FC<MenuPPalProps> = ({ menuItems }) => {
   return (
     <>
-        <aside className="w-64 flex flex-col bg-gray-50 m-3 rounded-2xl shadow-2xl">
+        <aside className="w-64 flex flex-col dark-navy m-0  shadow-2xl z-10 ">
             <div className="p-2 font-bold text-2xl flex align-middle items-center">
-            <div className='p-2'><img src="/logo.jpg" alt="Logo" className="h-10" /></div><div className='deep-gray'> MENÚ</div>
+            <div className='p-2'><img src="/logo.jpg" alt="Logo" className="h-10" /></div><div className='text-white'> MENÚ</div>
             </div>
             <hr className='my-2 h-px border-0 bg-gradient-to-r from-transparent via-gray-400 to-transparent'></hr>
             <nav className="flex-1 p-4 space-y-2">

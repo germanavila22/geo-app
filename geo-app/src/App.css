@@ -1,4 +1,7 @@
+
+
 @import "tailwindcss";
+
 .rojo-f-frisco{
  background-color:#D61B26;
  /*background-color:#4b0082;*/
@@ -35,20 +38,60 @@
 .fondo-claro{
   background-color: #ffffff;  
 }
-
-main::-webkit-scrollbar {
+#DivPpl::-webkit-scrollbar {
   width: 8px;
+  
 }
 
-main::-webkit-scrollbar-track {
+#DivPpl::-webkit-scrollbar-track {
   background: transparent;
 }
 
-main::-webkit-scrollbar-thumb {
-  background-color: #e5e7eb; /* Tailwind gray-200 */
+#DivPpl::-webkit-scrollbar-thumb {
+  background-color: #a1a2a5; /* Tailwind gray-200 */
   border-radius: 9999px;
 }
 
-main::-webkit-scrollbar-thumb:hover {
-  background-color: #9ca3af; /* Tailwind gray-400 */
+#DivPpl::-webkit-scrollbar-thumb:hover {
+  background-color: #E83F32; /* Tailwind gray-400 */
+}
+@font-face {
+  font-family: 'MontserratReg';
+  src: url('./assets/fonts/Montserrat-Regular.ttf') format('truetype');     
+  font-optical-sizing: auto;  
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'MontserratSemiBold';
+  src: url('./assets/fonts/Montserrat-SemiBold.ttf') format('truetype');     
+  font-optical-sizing: auto;  
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'MontserratThin';
+  src: url('./assets/fonts/Montserrat-Thin.ttf') format('truetype');     
+  font-optical-sizing: auto;  
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'MontserratLight';
+  src: url('./assets/fonts/Montserrat-Light.ttf') format('truetype');     
+  font-optical-sizing: auto;  
+  font-weight: normal;
+  font-style: normal;
+}
+.MontserratSemiBold{
+  font-family:'MontserratSemiBold';
+}
+.MontserratReg{
+  font-family:'MontserratReg';
+}
+.MontserratThin{
+  font-family:'MontserratThin';
+}
+.MontserratLight{
+  font-family:'MontserratLight';
 }

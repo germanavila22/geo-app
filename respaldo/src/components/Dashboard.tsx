@@ -106,14 +106,14 @@ useEffect(() => {
 
   return (
         <>
-    <div className="flex h-screen ">
+    <div className="flex h-screen amarillo-frisco">
       {/* Sidebar */}
       <MenuPpal menuItems={state.menu} />
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col ">
+      <div className="flex-1 flex flex-col m-3">
         {/* Topbar */}
-        <header className="flex flex-row justify-between items-start px-4 py-3 bg-gradient-to-br from-[#D61B26]  to-[#E83F32] shadow-md shadow-gray-600 h-40">
+        <header className="flex items-center justify-between px-4 py-3 rojo-f-frisco shadow-md rounded-xl">
           {/* Left: Logo + usuario */}
           <div className="flex items-center gap-4">
            <HiUser size={30} className='text-white'/>
@@ -148,9 +148,8 @@ useEffect(() => {
         {/* Contenido principal */}
 
       {/* Contenido principal */}
-      <main className="overflow-hidden  w-full  -mt-15 flex items-start justify-center h-screen  " >
-        <div id="DivPpl"  className='w-[95%] h-full   bg-white overflow-y-auto p-10 '>
-
+      <main className="pl-1 pt-5 overflow-auto h-full " >
+        <div className="p-4 bg-white rounded-lg shadow-md h-full overflow-auto -mt-10 z-10">
         <Outlet /> {/* Aquí se renderizan las páginas */}
         </div>
       </main>

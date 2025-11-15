@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 type Elemento = {
-  id_elemento: number;
-  nombre: string;
+  id_opcion: number;
+  descripcion: string;
 };
 
 interface AutocompleteSimpleProps {
@@ -11,6 +11,8 @@ interface AutocompleteSimpleProps {
   onChange: (name: string, value: number | null) => void;
   opciones: Elemento[];
   placeholder?: string;
+  ref?: React.Ref<HTMLInputElement>;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;  
 }
 
 const AutocompleteSimple: React.FC<AutocompleteSimpleProps> = ({
@@ -19,20 +21,25 @@ const AutocompleteSimple: React.FC<AutocompleteSimpleProps> = ({
   onChange,
   opciones,
   placeholder = '',
+  ref,
+  onKeyDown
 }) => {
   const [texto, setTexto] = useState('');
   const [filtrados, setFiltrados] = useState<Elemento[]>([]);
   const [mostrarLista, setMostrarLista] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  //codigo que permite usar el ref desde el componente padre
+  React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
   useEffect(() => {
-    const seleccionado = opciones.find(opt => opt.id_elemento === value);
-    setTexto(seleccionado ? seleccionado.nombre : '');
+    const seleccionado = opciones.find(opt => opt.id_opcion === value);
+    setTexto(seleccionado ? seleccionado.descripcion : '');
   }, [value, opciones]);
 
   const seleccionarElemento = (elemento: Elemento, avanzar = false) => {
-    setTexto(elemento.nombre);
-    onChange(name, elemento.id_elemento);
+    setTexto(elemento.descripcion);
+    onChange(name, elemento.id_opcion);
     setMostrarLista(false);
 
     if (avanzar && inputRef.current) {
@@ -54,7 +61,7 @@ const AutocompleteSimple: React.FC<AutocompleteSimpleProps> = ({
       return;
     }
     const coincidencias = opciones.filter(opt =>
-      opt.nombre.toLowerCase().includes(val.toLowerCase())
+      opt.descripcion.toLowerCase().includes(val.toLowerCase())
     );
     setFiltrados(coincidencias);
     setMostrarLista(true);
@@ -97,11 +104,11 @@ const AutocompleteSimple: React.FC<AutocompleteSimpleProps> = ({
         <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded shadow max-h-40 overflow-y-auto">
           {filtrados.map((opt) => (
             <li
-              key={opt.id_elemento}
+              key={opt.id_opcion}
               onMouseDown={() => seleccionarElemento(opt)}
               className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
             >
-              {opt.nombre}
+              {opt.descripcion}
             </li>
           ))}
         </ul>

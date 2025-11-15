@@ -20,8 +20,12 @@ const iniciaUser=()=>{
 }
 const iniciaUsuario=()=>{
     const str = localStorage.getItem('Usuario')
-    if(str){
-        return JSON.parse(str)
+    if (str && str.trim() !== "") {
+        try {
+        return JSON.parse(str);
+        } catch (error) {
+        console.error("Error al parsear Usuario:", error);
+        }
     }
     return {
         idusuario:0,
@@ -38,7 +42,17 @@ const iniciaMenu=()=>{
     return []
 }
 export const initialState:GeoState={
-    holeid:{id_collar:0,holeid:"",depth:0},
+    holeid:{
+        id_collar: 0, holeid: "", depth: 0,
+        east: 0,
+        north: 0,
+        rl: 0,
+        id_proyecto: 0,
+        dip: 0,
+        azimuth: 0,
+        proyecto: "",
+        tipo_survey: ""
+    },
     esUsuario:iniciaUser(),
     usuario:iniciaUsuario(),
     menu:iniciaMenu()

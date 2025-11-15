@@ -84,10 +84,12 @@ export const Login = () => {
         axios.post('http://localhost:3000/auth', {
             username: stform.username,
             password: stform.password
+        }, {
+            withCredentials: true
         })
         .then((response) => {
-            console.log("respuesta del backend")
-            console.log(response.data.menu);
+           // console.log("respuesta del backend")
+            //console.log(response.data.menu);
             if(response.data.authenticated){                
                 dispatch({type:'loguser',
                     payload:{esUsuario:true,
@@ -100,7 +102,7 @@ export const Login = () => {
                         ,menu:response.data.menus
                     }}
                   )
-                  navigate('/home'); 
+                 navigate('/home'); 
             }
             else{
                 setStmensaje("Usuario o contraseña incorrectos")                

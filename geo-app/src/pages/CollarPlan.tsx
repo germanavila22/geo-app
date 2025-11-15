@@ -398,8 +398,8 @@ const handleBorrar = (row: TypeCollarplan) => {
             </div>
             <div><Datatable columns={columnas} data={collarregistros} 
              pagination
-        paginationPerPage={25} // registros por página
-        paginationRowsPerPageOptions={[50,75,100]} // opciones de filas
+        paginationPerPage={100} // registros por página
+        paginationRowsPerPageOptions={[50,75,100,500]} // opciones de filas
         highlightOnHover
         striped/></div>
         </div>

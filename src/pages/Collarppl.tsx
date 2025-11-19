@@ -179,13 +179,13 @@ useEffect(() => {
             <hr className='my-2 h-px border-0 bg-gradient-to-r from-transparent via-gray-400 to-transparent'></hr>
             <div className="p-6 space-y-6 rounded-b-2xl fondo-claro">
                 <form action="#">
-                    <div className="grid grid-cols-12 md:grid-cols-6 lg:grid-cols-12 sm:grid-cols-2 gap-6">
-                        <div className="col-span-3 ">
+                    <div className="grid  md:grid-cols-2 lg:grid-cols-12 sm:grid-cols-2 gap-6">
+                        <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="holeid" className="text-sm font-medium text-gray-700 block mb-2">Holeid</label>
                             <input type="text" name="holeid" id="holeid" value={collarform.holeid} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5 uppercase" placeholder="Holeid" />
                         </div> 
-                        <div className="col-span-3 ">
+                        <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="id_proyecto" className="text-sm font-medium text-gray-700 block mb-2">Poyecto</label>
                             <select name="id_proyecto"id="id_proyecto" onChange={handleChange} value={collarform.id_proyecto}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5">
@@ -197,32 +197,32 @@ useEffect(() => {
                                 ))}
                             </select>
                         </div> 
-                        <div className="col-span-2 ">
+                       <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="east" className="text-sm font-medium text-gray-700 block mb-2">Este</label>
                             <input type="number" name="east" id="east" value={collarform.east} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" placeholder="Apple Imac 27”" />
                         </div>
-                        <div className="col-span-2 ">
+                       <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="north" className="text-sm font-medium text-gray-700 block mb-2">Norte</label>
                             <input type="number" name="north" id="north" value={collarform.north} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" placeholder="Apple Imac 27”" />
                         </div>                                               
-                        <div className="col-span-2 ">
+                       <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="rl" className="text-sm font-medium text-gray-700 block mb-2">Elevacion</label>
                             <input type="number" name="rl" id="rl" value={collarform.rl} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" placeholder="Apple Imac 27”" />
                         </div>
-                        <div className="col-span-2 ">
+                        <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="deth" className="text-sm font-medium text-gray-700 block mb-2">Depth</label>
                             <input type="number" name="depth" id="depth" value={collarform.depth} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" placeholder="Apple Imac 27”" />
                         </div>
-                        <div className="col-span-1 ">
+                        <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="dip" className="text-sm font-medium text-gray-700 block mb-2">Dip</label>
                             <input type="number" name="dip" id="dip" value={collarform.dip} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" />
                         </div>
-                        <div className="col-span-1 ">
+                         <div className="lg:col-span-3 md:col-span-6 sm:col-span-12">
                             <label htmlFor="azimuth" className="text-sm font-medium text-gray-700 block mb-2">Azimuth</label>
                             <input type="number" name="azimuth" id="azimuth" value={collarform.azimuth} onChange={handleChange}
                             className="w-full border-b-1 border-gray-400 focus:border-red-600 focus:border-b-2 outline-none transition duration-500 pt-2.5 pb-2.5 pl-1.5" />

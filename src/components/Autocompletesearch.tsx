@@ -94,7 +94,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
   // Seleccionar un registro
   const selectRecord = (record: DataRecord) => {
     setSelectedRecord(record);
-    setSearchTerm(` ${record.holeid}`);
+    setSearchTerm(`${record.holeid}`);
     setIsOpen(false);
     onSelect(record);
   };
@@ -136,7 +136,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (filteredData.length > 0) setIsOpen(true);
+            if (filteredData.length > 0){ setIsOpen(true);}else{setIsOpen(false)}
           }}
           placeholder={placeholder}
           className="w-0.5 focus:w-full pl-10 pr-10 py-2   rounded-4xl bg-gray-50 outline-none transition-all duration-500 text-sm"

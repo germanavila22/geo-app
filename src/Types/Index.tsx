@@ -8,7 +8,17 @@ export type Collar={
   id_collar:number,
   holeid:string,
   depth:number
+  depth_plan?:number
+  east:number
+  north:number
+  rl:number
+  id_proyecto:number
+  proyecto:string
+  dip:number
+  azimuth:number
+  tipo_survey:string
 }
+///p.nombre_proyecto nombre_proyecto,s.dip dip,s.azimuth azimuth,st.nombre AS tipo_survey
 export type Menu={
     id_menu:number,
     description:string,

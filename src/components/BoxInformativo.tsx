@@ -15,7 +15,8 @@ type InfoBoxProps = {
   titulo: string;
   cantidad: string;
   comentario: string;
-  border?: string; // opcional para personalizar fondo
+  fondo?: string; // opcional para personalizar fondo
+  border?: string; // opcional para personalizar borde
 };
 
 const iconMap: Record<string, React.ReactElement> = {
@@ -32,15 +33,15 @@ const iconMap: Record<string, React.ReactElement> = {
     Banderola: <LuFlagTriangleLeft size={50} />,
 };
 
-const BoxInformativo: React.FC<InfoBoxProps> = ({ icono, titulo, cantidad, comentario, border }) => {
+const BoxInformativo: React.FC<InfoBoxProps> = ({ icono, titulo, cantidad, comentario, fondo }) => {
 const iconElement: React.ReactElement = iconMap[icono] ??<LuGlobe size={25} />; // Ícono por defecto
   return (
-    <div className={`bg-white rounded-2xl shadow p-4 flex ${border}`}>
+    <div className={`${fondo} rounded-md shadow-md shadow-gray-400 p-4 flex  `}>
       {/* Icono - lado izquierdo 3/4 */}
       <div className=" items-center justify-center w-3/4">
-        <div className="text-lg font-semibold text-gray-700">{titulo}</div>
-        <div className="text-4xl font-bold text-gray-900">{cantidad}</div>
-        <div className="text-xs text-gray-400 ">{comentario}</div>    
+        <div className="MontserratLight text-lg  text-gray-500">{titulo}</div>
+        <div className="MontserratSemiBold text-4xl  text-gray-700">{cantidad}</div>
+        <div className=" MontserratReg text-xs text-gray-500 ">{comentario}</div>    
       </div>
 
       {/* Texto - lado derecho 1/4 */}

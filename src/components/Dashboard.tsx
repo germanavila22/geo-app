@@ -1,6 +1,7 @@
 // components/DashboardLayout.tsx
 import { useEffect,useState } from "react";
 import axios from "axios";
+import Cookies from "universal-cookie";
 
 import { Outlet } from "react-router-dom";
 import { useGeo } from "../hooks/useGeoContext";
@@ -15,7 +16,7 @@ import { FiSettings } from 'react-icons/fi';
 import { VscSearchFuzzy } from 'react-icons/vsc';
 import { HiUser } from 'react-icons/hi2';
 import { LuLogOut } from 'react-icons/lu';
-
+import { TbMapPinX } from 'react-icons/tb';
 
 export const DashboardLayout = () => {
   const{state,dispatch}=useGeo()
@@ -31,20 +32,10 @@ export const DashboardLayout = () => {
 		nombre_proyecto :string
     dip:number
     azimuth:number
+    tipo_survey:string
 	}
 const [datacollares,setdatacollares]=useState<CollarData[]>([])
-/*  const sampleData = [
-  { id_collar: 'COL001', holeid: 'HOLE_A1', depth: 15.5 },
-  { id_collar: 'COL002', holeid: 'HOLE_A2', depth: 22.3 },
-  { id_collar: 'COL003', holeid: 'HOLE_B1', depth: 18.7 },
-  { id_collar: 'COL004', holeid: 'HOLE_B2', depth: 31.2 },
-  { id_collar: 'COL005', holeid: 'HOLE_C1', depth: 12.8 },
-  { id_collar: 'COL006', holeid: 'HOLE_C2', depth: 25.9 },
-  { id_collar: 'COL007', holeid: 'HOLE_D1', depth: 19.4 },
-  { id_collar: 'COL008', holeid: 'HOLE_D2', depth: 28.6 },
-  { id_collar: 'COL009', holeid: 'HOLE_E1', depth: 16.3 },
-  { id_collar: 'COL010', holeid: 'HOLE_E2', depth: 33.1 },
-];*/
+
   const salir = () => {
     const initiusuarusuario: Usuario = {
       idusuario: 0,
@@ -52,17 +43,42 @@ const [datacollares,setdatacollares]=useState<CollarData[]>([])
       username: "",
       email: ""
     };
+     const cookies = new Cookies();     
+     cookies.remove("jwt"); 
     dispatch({ type: 'loguser', payload: { esUsuario: false,usuario:initiusuarusuario} });
     window.location.href = '/login'; // Redirigir a la página de inicio de sesión
   };
+  const quitarholeid=()=>{
+    dispatch({type:'holeid',payload:{holeid:{
+      id_collar: 0,
+      holeid: "", 
+      depth: 0,
+      east: 0,
+      north: 0,
+      rl: 0,
+      id_proyecto: 0,
+      dip: 0,
+      azimuth: 0,
+      proyecto: "",
+      tipo_survey: ""
+    }}})
+  }
 const handleRecordSelect = (record: any) => {
     console.log('Registro seleccionado:', record);
     dispatch({type:'holeid',
                     payload:{
                         holeid:{
-                            id_collar:record.id_collar,
-                            holeid:record.holeid,
-                            depth:record.depth,                            
+                          id_collar: record.id_collar,
+                          holeid: record.holeid,
+                          depth: record.depth,
+                          east: record.east,
+                          north: record.north,
+                          rl: record.rl,
+                          id_proyecto: record.id_proyecto,
+                          dip: record.dip,
+                          azimuth: record.azimuth,
+                          proyecto: record.nombre_proyecto,
+                          tipo_survey: record.tipo_survey
                         }
                         
                     }}
@@ -78,7 +94,7 @@ const handleRecordSelect = (record: any) => {
     //   setSampleData(results);
     // });
   };
-////codigfo para buscar el barreno
+////codigo para buscar el barreno
 useEffect(() => {
     if (Cadena.trim() === '') return; // Evita búsquedas vacías
 
@@ -106,7 +122,7 @@ useEffect(() => {
 
   return (
         <>
-    <div className="flex h-screen ">
+    <div className="flex h-screen  bg-violet-50">
       {/* Sidebar */}
       <MenuPpal menuItems={state.menu} />
 
@@ -115,28 +131,41 @@ useEffect(() => {
         {/* Topbar */}
         <header className="flex flex-row justify-between items-start px-4 py-3 bg-gradient-to-br from-[#D61B26]  to-[#E83F32] shadow-md shadow-gray-600 h-40">
           {/* Left: Logo + usuario */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center p-1">
            <HiUser size={30} className='text-white'/>
-            <span className="font-semibold text-white text-2xl ">{state.usuario?.nombre}</span>
+            <span className="MontserratLight  text-white text-3xl ">{state.usuario?.nombre}</span>
           </div>
 
           {/* Center: campo de búsqueda */}
-          <div className="flex-1 mx-6 p-1  ">
+          <div className="flex-1 mx-6 p-1 flex justify-start">
              <div className="relative max-w-xs w-full transition-all duration-300 ease-in-out">
               <AutocompleteSearch 
               data={datacollares}
               onSelect={handleRecordSelect}
-              onChange={handleSearchChange}
-              placeholder="Buscar por ID Collar, Hole ID o Depth..."
+              onChange={handleSearchChange}              
+              placeholder="Buscar nombre de holeid..."
             />
+            
+            </div >
+            <div className="flex items-center">
+              
+              <span className=" text-white text-2xl flex items-center gap-2 MontserratLight">
+                {state.holeid?.holeid && (
+                  <>
+                    {state.holeid.holeid}
+                    <TbMapPinX
+                      className="cursor-pointer text-gray-200 hover:text-white"
+                      title="Quitar seleccion de barreno"
+                      size={25}
+                      onClick={quitarholeid}
+                    />
+                  </>
+                )}
+              </span>
             </div>
           </div>
-          <div className="mb-8">
           
-            
-            
-          
-        </div>
+          <div className="mb-8"> </div>
           {/* Right: iconos */}
           <div className="flex items-center gap-4 text-gray-300  text-xl">
             <VscSearchFuzzy className="cursor-pointer hover:text-white" title="Búsqueda avanzada"size={25} />
@@ -148,8 +177,8 @@ useEffect(() => {
         {/* Contenido principal */}
 
       {/* Contenido principal */}
-      <main className="overflow-hidden  w-full  -mt-15 flex items-start justify-center h-screen  " >
-        <div id="DivPpl"  className='w-[95%] h-full   bg-white overflow-y-auto p-10 '>
+      <main className="overflow-hidden  w-full  -mt-15 flex items-start justify-center h-screen " >
+        <div id="DivPpl"  className='w-[95%] h-full overflow-y-auto p-0 '>
 
         <Outlet /> {/* Aquí se renderizan las páginas */}
         </div>

@@ -135,7 +135,7 @@ export const Login = () => {
       style={{
         backgroundImage:
           'url("/fondo1.jpg"',
-        backgroundColor: '#666666',
+        backgroundColor: '#f1f1f1',
         backgroundBlendMode: 'multiply',
       }}
     ><div className='bg-white/100 rounded-2xl shadow-xl flex w-full max-w-3xl overflow-hidden'>
@@ -165,6 +165,7 @@ export const Login = () => {
                     id="password"
                     name="password"
                     type="password"
+                    
                     className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600"
                     placeholder="*****"
                     ref={refpass}

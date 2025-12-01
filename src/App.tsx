@@ -18,6 +18,8 @@ import Collarppl from './pages/Collarppl';
 import Survey from './pages/Survey';
 import Perforacion from './pages/Perforacion';
 import Caratula from './pages/Caratula';
+import Tickets from './pages/Tickets';
+import SolicitudForm from './pages/SolicitudForm';
 import './App.css'
 //import { useToken } from './hooks/useToken';
 import Cookies from "universal-cookie";
@@ -133,6 +135,9 @@ setTimeout(() => {
           <Route path="/survey" element={<Survey />} />
           <Route path="/perforacion" element={<Perforacion />} />
           <Route path="/caratula" element={<Caratula />} />
+          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/compras" element={<SolicitudForm />} />
+          
           
         </Route>
       </Route>

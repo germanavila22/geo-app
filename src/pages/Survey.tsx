@@ -432,7 +432,7 @@ useEffect(() => {
             </div>
           }
 
-          <Modal
+      <Modal
        title="Captura de registro de survey"
         open={isModalOpen}
         onOk={handleOk}

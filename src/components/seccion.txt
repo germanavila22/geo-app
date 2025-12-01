@@ -1,0 +1,605 @@
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+
+// --- 1. Definición de Tipos de Datos (Interfaces) ---
+
+/** Interfaz para la información de collares (collar). */
+interface Collar {
+  holeid: string;
+  depth: number; // Profundidad final del barreno
+}
+
+/** Interfaz para la información de levantamiento (survey). */
+interface Survey {
+  holeid: string;
+  depth: number; // Profundidad de la medición
+  azimuth: number; // Acimut (0-360 grados)
+  dip: number; // Inclinación (-90 a 90 grados)
+}
+
+/** Interfaz para la información geológica (geology). */
+interface Geology {
+  holeid: string;
+  geolfrom: number; // Desde (metros)
+  geolto: number; // Hasta (metros)
+  litho: string; // Nombre de la litología
+  color: string; // Color para el intervalo (ej: '#FF0000')
+}
+
+/** Coordenadas 3D (X: Este/Oeste, Y: Norte/Sur, Z: Vertical/Elevación) */
+interface Coords3D {
+  x: number;
+  y: number;
+  z: number;
+  md: number; // Profundidad medida (Measured Depth)
+}
+
+/** Estructura de un segmento geológico con coordenadas interpoladas y en píxeles. */
+interface GeologicalSegment {
+  litho: string;
+  interval: string;
+  color: string;
+  fromMd: number;
+  toMd: number;
+  pixelPath: Coords3D[]; // Puntos del barreno dentro de este intervalo, en coordenadas de píxel
+}
+
+// --- 2. Funciones de Ayuda de Geometría ---
+
+const degToRad = (degrees: number): number => degrees * (Math.PI / 180);
+
+/**
+ * Calcula la trayectoria 3D del barreno usando el método Tangente.
+ */
+const calculatePath = (surveys: Survey[], finalDepth: number): Coords3D[] => {
+    const sortedSurveys = [...surveys].sort((a, b) => a.depth - b.depth);
+    
+    if (sortedSurveys.length === 0) {
+        return [{ x: 0, y: 0, z: 0, md: 0 }, { x: 0, y: 0, z: finalDepth, md: finalDepth }];
+    }
+
+    const path: Coords3D[] = [{ x: 0, y: 0, z: 0, md: 0 }];
+    let currentX = 0;
+    let currentY = 0;
+    let currentZ = 0;
+
+    const pathPoints = [
+        { depth: 0, azimuth: sortedSurveys[0].azimuth, dip: sortedSurveys[0].dip },
+        ...sortedSurveys
+    ];
+
+    for (let i = 1; i < pathPoints.length; i++) {
+        const p1 = pathPoints[i - 1];
+        const p2 = pathPoints[i];
+
+        const length = p2.depth - p1.depth;
+        
+        // Promedio de ángulos (en radianes)
+        const avgAzimuth = degToRad((p1.azimuth + p2.azimuth) / 2);
+        const avgDip = degToRad((p1.dip + p2.dip) / 2);
+
+        // Desplazamientos
+        const deltaX = length * Math.sin(avgDip) * Math.sin(avgAzimuth);
+        const deltaY = length * Math.sin(avgDip) * Math.cos(avgAzimuth);
+        const deltaZ = length * Math.cos(avgDip); // Cambio vertical
+
+        currentX += deltaX;
+        currentY += deltaY;
+        currentZ += deltaZ;
+
+        path.push({ x: currentX, y: currentY, z: currentZ, md: p2.depth });
+    }
+
+    // Asegurar el punto final si el último survey no alcanza la profundidad total
+    if (sortedSurveys[sortedSurveys.length - 1].depth < finalDepth) {
+        const lastSurvey = pathPoints[pathPoints.length - 1];
+        const length = finalDepth - lastSurvey.depth;
+
+        const avgAzimuth = degToRad(lastSurvey.azimuth);
+        const avgDip = degToRad(lastSurvey.dip);
+        
+        const deltaX = length * Math.sin(avgDip) * Math.sin(avgAzimuth);
+        const deltaY = length * Math.sin(avgDip) * Math.cos(avgAzimuth);
+        const deltaZ = length * Math.cos(avgDip);
+
+        currentX += deltaX;
+        currentY += deltaY;
+        currentZ += deltaZ;
+
+        path.push({ x: currentX, y: currentY, z: currentZ, md: finalDepth });
+    }
+
+    return path;
+};
+
+// --- 3. Componente Principal React ---
+
+const HOLE_WIDTH = 10; // Ancho del barreno en píxeles
+
+/**
+ * Componente principal para visualizar la sección longitudinal del barreno.
+ */
+const SeccionBarreno = ({ collar_array, survey_array, geology_array }: {
+    collar_array: Collar[];
+    survey_array: Survey[];
+    geology_array: Geology[];
+}) => {
+    // Referencias y Estado
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [tooltip, setTooltip] = useState<{ x: number, y: number, litho: string, interval: string } | null>(null);
+    const [isCanvasReady, setIsCanvasReady] = useState(false);
+    const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+    
+    // Datos y Cálculos Principales
+    const collar = useMemo(() => collar_array.length > 0 ? collar_array[0] : null, [collar_array]);
+    const finalDepth = collar?.depth || (survey_array.length > 0 ? survey_array[survey_array.length - 1].depth : 0);
+    const sortedGeology = useMemo(() => [...geology_array].sort((a, b) => a.geolfrom - b.geolfrom), [geology_array]);
+    
+    const [path, setPath] = useState<Coords3D[]>([]);
+    const [geologicalSegments, setGeologicalSegments] = useState<GeologicalSegment[]>([]);
+
+    // Determina si hay huecos en la geología
+    const hasGaps = useMemo(() => {
+        if (sortedGeology.length === 0) return true;
+        if (sortedGeology[0].geolfrom !== 0) return true;
+
+        for (let i = 0; i < sortedGeology.length - 1; i++) {
+            if (sortedGeology[i].geolto !== sortedGeology[i+1].geolfrom) return true;
+        }
+
+        if (finalDepth > 0 && sortedGeology[sortedGeology.length - 1].geolto < finalDepth) return true;
+
+        return false;
+    }, [sortedGeology, finalDepth]);
+
+    // --- Lógica de interpolación y dibujo ---
+
+    const interpolatePath = useCallback((md: number, currentPath: Coords3D[]): { x: number, z: number } | null => {
+        if (currentPath.length === 0) return null;
+
+        if (md <= currentPath[0].md) return { x: currentPath[0].x, z: currentPath[0].z };
+        
+        for (let i = 1; i < currentPath.length; i++) {
+            const p1 = currentPath[i - 1];
+            const p2 = currentPath[i];
+
+            if (md >= p1.md && md <= p2.md) {
+                if (p1.md === p2.md) return { x: p1.x, z: p1.z };
+
+                const fraction = (md - p1.md) / (p2.md - p1.md);
+                const x = p1.x + (p2.x - p1.x) * fraction;
+                const z = p1.z + (p2.z - p1.z) * fraction;
+
+                return { x, z };
+            }
+        }
+        
+        const lastP = currentPath[currentPath.length - 1];
+        if (md > lastP.md) return { x: lastP.x, z: lastP.z };
+
+        return null;
+    }, []);
+
+    const calculateAndDraw = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !collar || survey_array.length === 0 || finalDepth === 0) return;
+
+        // 1. Configurar dimensiones del canvas (para ser responsive)
+        const container = canvas.parentElement;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        setCanvasDimensions({ width: rect.width, height: rect.height });
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 2. Calcular la trayectoria 3D
+        const newPath = calculatePath(survey_array, finalDepth);
+        setPath(newPath); // Actualizar el estado del path para el hit testing
+
+        if (newPath.length <= 1) return;
+
+        // 3. Determinar Escalas y Márgenes
+        const allX = newPath.map(p => p.x);
+        const allZ = newPath.map(p => p.z); 
+
+        const minX = Math.min(...allX);
+        const maxX = Math.max(...allX);
+        const minZ = Math.min(...allZ);
+        const maxZ = Math.max(...allZ);
+
+        const rangeX = maxX - minX;
+        const rangeZ = maxZ - minZ;
+
+        const margin = 50;
+        const drawWidth = canvas.width - 2 * margin;
+        const drawHeight = canvas.height - 2 * margin;
+
+        const scaleFactor = Math.min(drawWidth / Math.max(rangeX, 1), drawHeight / Math.max(rangeZ, 1));
+        
+        const offsetX = margin + (drawWidth - rangeX * scaleFactor) / 2 - minX * scaleFactor;
+        
+        const initialDip = survey_array[0]?.dip || 90;
+        let offsetY: number;
+
+        if (initialDip < 0) {
+            // Dip Negativo: Z positivo hacia abajo (Top to Bottom)
+            offsetY = margin - minZ * scaleFactor;
+        } else {
+            // Dip Positivo: Z positivo hacia arriba (Bottom to Top)
+            offsetY = canvas.height - margin - maxZ * scaleFactor;
+        }
+
+        /** Convierte coordenadas 3D a coordenadas de píxeles en el Canvas. */
+        const toPx = (coord: number, axis: 'x' | 'z'): number => {
+            if (axis === 'x') {
+                return coord * scaleFactor + offsetX;
+            } else {
+                if (initialDip < 0) {
+                    return coord * scaleFactor + offsetY;
+                } else {
+                    // Inversión para dibujar Z positivo de abajo hacia arriba en la pantalla
+                    const scaleStart = canvas.height - margin - maxZ * scaleFactor;
+                    return canvas.height - (coord * scaleFactor + scaleStart) + minZ * scaleFactor;
+                }
+            }
+        };
+
+        const getPixelPathSegment = (fromMd: number, toMd: number, currentPath: Coords3D[]): Coords3D[] => {
+            const segmentPath: Coords3D[] = [];
+            
+            const startPoint = interpolatePath(fromMd, currentPath);
+            const endPoint = interpolatePath(toMd, currentPath);
+
+            if (startPoint) {
+                segmentPath.push({ x: toPx(startPoint.x, 'x'), y: 0, z: toPx(startPoint.z, 'z'), md: fromMd });
+            }
+
+            for (const point of currentPath) {
+                if (point.md > fromMd && point.md < toMd) {
+                    segmentPath.push({
+                        x: toPx(point.x, 'x'), y: 0, z: toPx(point.z, 'z'), md: point.md
+                    });
+                }
+            }
+
+            if (endPoint && fromMd !== toMd) {
+                segmentPath.push({ x: toPx(endPoint.x, 'x'), y: 0, z: toPx(endPoint.z, 'z'), md: toMd });
+            }
+
+            return segmentPath;
+        };
+        
+        // 4. Preparar Segmentos Geológicos
+        const newGeologicalSegments: GeologicalSegment[] = [];
+        let currentMd = 0; 
+
+        for (const geo of sortedGeology) {
+            const startMd = geo.geolfrom;
+            const endMd = geo.geolto;
+
+            // Manejo de Huecos (Gaps)
+            if (startMd > currentMd) {
+                newGeologicalSegments.push({
+                    litho: "Vacío/Gap",
+                    interval: `${currentMd.toFixed(2)} - ${startMd.toFixed(2)} m`,
+                    color: 'black',
+                    fromMd: currentMd,
+                    toMd: startMd,
+                    pixelPath: getPixelPathSegment(currentMd, startMd, newPath)
+                });
+            }
+
+            // Dibujar el Intervalo Geológico
+            newGeologicalSegments.push({
+                litho: geo.litho,
+                interval: `${geo.geolfrom.toFixed(2)} - ${geo.geolto.toFixed(2)} m`,
+                color: geo.color,
+                fromMd: startMd,
+                toMd: endMd,
+                pixelPath: getPixelPathSegment(startMd, endMd, newPath)
+            });
+
+            currentMd = endMd;
+        }
+
+        // Manejo de Hueco Final
+        if (currentMd < finalDepth) {
+            newGeologicalSegments.push({
+                litho: "Vacío/Gap",
+                interval: `${currentMd.toFixed(2)} - ${finalDepth.toFixed(2)} m`,
+                color: 'black',
+                fromMd: currentMd,
+                toMd: finalDepth,
+                pixelPath: getPixelPathSegment(currentMd, finalDepth, newPath)
+            });
+        }
+
+        setGeologicalSegments(newGeologicalSegments);
+        
+        // 5. Dibujar en el Canvas
+        const drawSegments = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineCap = 'round';
+            ctx.lineWidth = HOLE_WIDTH;
+
+            for (const segment of newGeologicalSegments) {
+                ctx.strokeStyle = segment.color;
+                
+                ctx.beginPath();
+                if (segment.pixelPath.length > 0) {
+                    ctx.moveTo(segment.pixelPath[0].x, segment.pixelPath[0].z);
+
+                    for (let i = 1; i < segment.pixelPath.length; i++) {
+                        ctx.lineTo(segment.pixelPath[i].x, segment.pixelPath[i].z);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Dibujar el collar (círculo grande)
+            const collarPoint = newGeologicalSegments[0]?.pixelPath[0];
+            if (collarPoint) {
+                ctx.fillStyle = '#4B5563'; // Gris oscuro
+                ctx.beginPath();
+                ctx.arc(collarPoint.x, collarPoint.z, HOLE_WIDTH * 1.5, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Etiqueta del barreno
+                ctx.fillStyle = '#1E40AF';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(collar.holeid, collarPoint.x, collarPoint.z - 15);
+            }
+        };
+
+        const drawAxes = () => {
+            ctx.strokeStyle = '#9CA3AF';
+            ctx.fillStyle = '#1F2937';
+            ctx.font = '10px sans-serif';
+            ctx.lineWidth = 1;
+
+            // Eje X (Horizontal Displacement)
+            const bottomY = canvas.height - 30;
+            
+            ctx.beginPath();
+            ctx.moveTo(toPx(minX, 'x'), bottomY);
+            ctx.lineTo(toPx(maxX, 'x'), bottomY);
+            ctx.stroke();
+            
+            const xInterval = Math.ceil((maxX - minX) / 5) || 5;
+            for (let x = Math.floor(minX / xInterval) * xInterval; x <= maxX; x += xInterval) {
+                const px = toPx(x, 'x');
+                if (px >= 0 && px <= canvas.width) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, bottomY - 5);
+                    ctx.lineTo(px, bottomY + 5);
+                    ctx.stroke();
+                    ctx.textAlign = 'center';
+                    ctx.fillText(x.toFixed(0) + ' m', px, bottomY + 20);
+                }
+            }
+            
+            ctx.textAlign = 'center';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('DESPLAZAMIENTO HORIZONTAL (m)', canvas.width / 2, canvas.height - 5);
+
+            // Eje Z (Vertical Depth/Elevation)
+            const leftX = 30;
+
+            const zRange = maxZ - minZ;
+            const zInterval = Math.ceil(zRange / 5) || 50;
+            
+            for (let z = Math.floor(minZ / zInterval) * zInterval; z <= maxZ; z += zInterval) {
+                const pz = toPx(z, 'z');
+                if (pz >= 0 && pz <= canvas.height) {
+                    ctx.beginPath();
+                    ctx.moveTo(leftX - 5, pz);
+                    ctx.lineTo(leftX + 5, pz);
+                    ctx.stroke();
+                    ctx.textAlign = 'right';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText(z.toFixed(0) + ' m', leftX - 10, pz + 3);
+                }
+            }
+        };
+
+        drawSegments();
+        drawAxes();
+    }, [collar, survey_array, sortedGeology, finalDepth, interpolatePath]); // Dependencias de useCallback
+
+    // --- Efectos de React ---
+
+    // 1. Efecto para manejar el cálculo inicial y el redimensionamiento
+    useEffect(() => {
+        setIsCanvasReady(true);
+        calculateAndDraw();
+
+        const handleResize = () => calculateAndDraw();
+        window.addEventListener('resize', handleResize);
+        
+        // Cleanup listener
+        return () => window.removeEventListener('resize', handleResize);
+    }, [calculateAndDraw]);
+
+    // 2. Función de detección de colisión para el Tooltip
+    const isNearSegment = (px: number, py: number, segment: GeologicalSegment, tolerance: number): boolean => {
+        const path = segment.pixelPath;
+        if (path.length < 2) return false;
+
+        for (let i = 0; i < path.length - 1; i++) {
+            const x1 = path[i].x;
+            const y1 = path[i].z;
+            const x2 = path[i+1].x;
+            const y2 = path[i+1].z;
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const l2 = (dx * dx) + (dy * dy);
+
+            if (l2 === 0) {
+                if (Math.hypot(px - x1, py - y1) <= tolerance) return true;
+                continue;
+            }
+
+            let t = ((px - x1) * dx + (py - y1) * dy) / l2;
+            t = Math.max(0, Math.min(1, t));
+
+            const closestX = x1 + t * dx;
+            const closestY = y1 + t * dy;
+
+            const distance = Math.hypot(px - closestX, py - closestY);
+
+            if (distance <= tolerance) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // 3. Manejador de movimiento del ratón
+    const onCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        const hoverTolerance = HOLE_WIDTH / 2 + 5; 
+        
+        let foundSegment: GeologicalSegment | null = null;
+
+        for (const segment of geologicalSegments) {
+            if (isNearSegment(mouseX, mouseY, segment, hoverTolerance)) {
+                foundSegment = segment;
+                break; 
+            }
+        }
+
+        if (foundSegment) {
+            setTooltip({
+                x: mouseX, 
+                y: mouseY,
+                litho: foundSegment.litho,
+                interval: foundSegment.interval
+            });
+        } else {
+            setTooltip(null);
+        }
+    };
+
+    // --- 4. Renderizado (JSX) ---
+
+    return (
+        <div className="p-4 sm:p-8 bg-gray-50 min-h-screen font-sans">
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+            
+            <h1 className="text-3xl font-extrabold text-blue-800 mb-6 border-b-4 border-blue-500 pb-2">
+                Sección Longitudinal de Barreno ({collar ? collar.holeid : 'Cargando...'})
+            </h1>
+
+            <div className="relative bg-white shadow-2xl rounded-xl p-4 overflow-hidden border border-gray-200">
+                <div className="flex flex-col md:flex-row gap-4">
+                    
+                    {/* Lado Izquierdo: Etiquetas y Colores */}
+                    <div className="w-full md:w-1/4 p-4 bg-gray-100 rounded-lg shadow-inner">
+                        <h2 className="text-xl font-semibold mb-3 text-blue-700">Leyenda Geológica</h2>
+                        
+                        {sortedGeology.map((geo) => (
+                            <div key={geo.litho + geo.geolfrom} className="flex items-center space-x-2 mb-1">
+                                <div className="w-4 h-4 rounded-full shadow-md" style={{ backgroundColor: geo.color }}></div>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {geo.litho} ({geo.geolfrom.toFixed(1)} - {geo.geolto.toFixed(1)} m)
+                                </span>
+                            </div>
+                        ))}
+
+                        {/* Indicador de Gaps */}
+                        {hasGaps && (
+                            <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-300">
+                                <div className="w-4 h-4 bg-black rounded-full shadow-md"></div>
+                                <span className="text-sm font-bold text-gray-800">Vacío/Error (Negro)</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Lado Derecho: Canvas de Dibujo */}
+                    <div className="w-full md:w-3/4 flex justify-center items-center p-2">
+                        <div className="relative w-full" style={{ aspectRatio: '4 / 3', maxWidth: '800px' }}>
+                            <canvas 
+                                ref={canvasRef}
+                                className="absolute top-0 left-0 w-full h-full border border-gray-400 rounded-lg cursor-crosshair" 
+                                onMouseMove={onCanvasMouseMove}
+                                onMouseOut={() => setTooltip(null)}
+                            >
+                                Tu navegador no soporta Canvas HTML5.
+                            </canvas>
+
+                            {/* Tooltip flotante */}
+                            {tooltip && (
+                                <div 
+                                    style={{
+                                        left: tooltip.x + 10, 
+                                        top: tooltip.y + 10
+                                    }}
+                                    className="absolute bg-blue-800 text-white p-2 rounded-lg shadow-xl pointer-events-none transition-opacity duration-150 transform z-10"
+                                >
+                                    <p className="font-bold">{tooltip.litho}</p>
+                                    <p className="text-sm">MD: {tooltip.interval}</p>
+                                </div>
+                            )}
+
+                            {/* Indicador de Eje Z (Profundidad) - Estático para el eje */}
+                            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 p-2 bg-white/70 rounded-r-lg shadow-md font-bold text-gray-700 text-xs rotate-90 origin-bottom-left"
+                                 style={{ left: 15, top: 'calc(50% + 50px)' }}
+                            >
+                                PROFUNDIDAD VERTICAL (m)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// --- 5. Componente Wrapper (App) para datos de ejemplo ---
+
+const exampleCollar: Collar[] = [{ holeid: "DH-24-001", depth: 300 }];
+
+const exampleSurvey: Survey[] = [
+    { holeid: "DH-24-001", depth: 0, azimuth: 45, dip: -50 }, 
+    { holeid: "DH-24-001", depth: 50, azimuth: 40, dip: -45 },
+    { holeid: "DH-24-001", depth: 100, azimuth: 35, dip: -40 },
+    { holeid: "DH-24-001", depth: 150, azimuth: 30, dip: -35 },
+    { holeid: "DH-24-001", depth: 200, azimuth: 30, dip: -30 },
+    { holeid: "DH-24-001", depth: 250, azimuth: 30, dip: -25 },
+    { holeid: "DH-24-001", depth: 300, azimuth: 30, dip: -20 },
+];
+
+const exampleGeology: Geology[] = [
+    { holeid: "DH-24-001", geolfrom: 0, geolto: 45, litho: "Soil/Overburden", color: "#A0522D" },
+    { holeid: "DH-24-001", geolfrom: 45, geolto: 45.1, litho: "Fault Zone", color: "#6A5ACD" }, 
+    { holeid: "DH-24-001", geolfrom: 45.1, geolto: 110, litho: "Granodiorite", color: "#FFD700" },
+    { holeid: "DH-24-001", geolfrom: 110, geolto: 115, litho: "Quartz Vein", color: "#FFFFFF" },
+    { holeid: "DH-24-001", geolfrom: 115, geolto: 250, litho: "Diorite Porphyry", color: "#32CD32" },
+    { holeid: "DH-24-001", geolfrom: 250, geolto: 280, litho: "Sheared Basalt", color: "#808080" },
+    // Gap: 280-300m
+];
+
+const App = () => (
+    <SeccionBarreno 
+        collar_array={exampleCollar} 
+        survey_array={exampleSurvey} 
+        geology_array={exampleGeology} 
+    />
+);
+
+export default App;
